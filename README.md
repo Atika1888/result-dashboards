@@ -1,6 +1,7 @@
-Result Dashboards is a student result reporting app for teachers. Drop in an Excel mark sheet for each assessment and it creates three dashboards for every student: standing in class, overall result with percentile, and subject-wise distribution. As you add more months, it links them into one combined progress report. It also exports individual and combined PDFs for every student, named by student and assessment.
+# Manisy Dashboards
 
-Everything runs on the user’s own device, so marks are never uploaded. Try it with the built-in sample data.
+Manisy Dashboards imports tables from spreadsheets, CSV/TSV/text, JSON, text-based PDFs, DOCX, HTML, and spreadsheet XML. It infers student names and numeric measures without requiring a serial-number column, then builds student and combined progress dashboards.
 
-Built with: JavaScript, Electron, SheetJS, jsPDF, html2canvas
+All data is processed locally in the browser. PDFs are generated only when you choose **Download all PDFs**. School logos embedded in supported Office files, or selected as image files, are shown on student reports.
 
+The GitHub Pages site uses the locally bundled libraries in `vendor/`; no CDN fallback is required.
