@@ -51,12 +51,14 @@ const ord=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10>3?0:n%10]);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pc=v=>v==null?'–':(v*100).toFixed(1)+'%';
 const fmtNum=v=>typeof v=='number'&&Number.isFinite(v)?String(Number(v.toFixed(2))):v;
+const isPercentSubject=n=>/^(?:%|percent(?:age)?|pct)$/i.test(String(n||'').trim());
 const $=id=>document.getElementById(id);
 const sum=a=>a.reduce((x,y)=>x+y,0);
 let DB=JSON.parse(localStorage.getItem('rd')||'{}'),LOGOS=JSON.parse(localStorage.getItem('md-logos')||'{}'),cls=Object.keys(DB)[0],ai=0,sn='',tab='s',view='home',on={},W={};
 const BRAND_LOGO='manisy-logo.png';
 const ask=(m,d='')=>new Promise(r=>{const o=document.createElement('dialog');o.innerHTML=`<form method=dialog style="min-width:320px"><p>${esc(m)}</p><input style="width:100%" value="${esc(d)}"><p style="text-align:right"><button type=button onclick="this.closest('dialog').close('c')">Cancel</button> <button value=ok>OK</button></p></form>`;document.body.append(o);o.showModal();const i=o.querySelector('input');i.select();o.onclose=()=>{const v=o.returnValue=='ok'?i.value:null;o.remove();r(v)}});
 const save=()=>localStorage.setItem('rd',JSON.stringify(DB));
+Object.values(DB).forEach(assessments=>assessments.forEach(a=>{const keep=a.subs.map((s,i)=>isPercentSubject(s.n)?-1:i).filter(i=>i>=0);if(keep.length!==a.subs.length){a.subs=keep.map(i=>a.subs[i]);a.st.forEach(s=>s.k=keep.map(i=>s.k[i]));save()}}));
 const kp=(l,v,s)=>`<div class=k><small>${l}</small><b>${v}</b><small>${s||'&nbsp;'}</small></div>`;
 const tb=(h,r)=>`<table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
 
@@ -164,7 +166,7 @@ async function parse(wb){const sheet=wb.Sheets[wb.SheetNames[0]],d=XLSX.utils.sh
  const headers=(d[h]||[]).map(label),body=d.slice(h+1),width=Math.max(headers.length,...body.slice(0,100).map(r=>r?r.length:0));
  let nameCol=headers.findIndex(x=>nameHeader.test(x));if(nameCol<0)nameCol=Array.from({length:width},(_,i)=>i).find(i=>!skip.test(headers[i]||'')&&body.some(r=>r&&typeof r[i]=='string'&&r[i].trim()&&numeric(r[i])==null));
  if(nameCol==null||nameCol<0)throw'Could not identify a text column for student names';
- let cols=Array.from({length:width},(_,i)=>i).filter(i=>i!==nameCol&&!skip.test(headers[i]||'')&&body.some(r=>r&&numeric(r[i])!=null));
+ let cols=Array.from({length:width},(_,i)=>i).filter(i=>i!==nameCol&&!skip.test(headers[i]||'')&&!isPercentSubject(headers[i])&&body.some(r=>r&&numeric(r[i])!=null));
  if(!cols.length)throw'No numeric measures were found beside the name column';
  const subs=cols.map((i,j)=>{let n=headers[i]||'Measure '+(j+1),cap=n.match(/(?:\/|out\s+of|max(?:imum)?)\s*(\d+(?:\.\d+)?)/i)||n.match(/\((\d+(?:\.\d+)?)\s*(?:marks?)?\)/i),values=body.map(r=>r?numeric(r[i]):null).filter(v=>v!=null),m=cap?parseFloat(cap[1]):Math.ceil(Math.max(...values)/5)*5||Math.max(...values),cleanName=n.replace(/\s*(?:\/|out\s+of|max(?:imum)?)\s*\d+(?:\.\d+)?|\s*\(\d+(?:\.\d+)?\s*(?:marks?)?\)/i,'').replace(/\(\s*\)/g,'').trim();return{n:cleanName||n,m,i}});
  const st=body.map(r=>{const n=label(r&&r[nameCol]),k=subs.map(s=>r?numeric(r[s.i]):null);return n&&!/^%+$/.test(n)&&k.some(v=>v!=null)?{n,k}:null}).filter(Boolean);
