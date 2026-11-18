@@ -22,7 +22,7 @@ main{max-width:1000px;margin:16px auto;padding:0 14px;animation:up .35s ease}
 h2{background:linear-gradient(90deg,var(--red),var(--dk));color:#fff;margin:-14px -14px 12px;padding:9px 14px;font-size:15px;border-radius:12px 12px 0 0}
 .ks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .k{background:var(--tint);border-top:3px solid var(--red);border-radius:8px;padding:8px 14px;min-width:112px;text-align:center;flex:1}
-.k b{display:block;font-size:24px;color:var(--red)}.k small{display:block;color:#7a6a6c;font-size:11px}
+.k b{display:block;font-size:24px;color:var(--red);overflow-wrap:anywhere}.k small{display:block;color:#7a6a6c;font-size:11px}
 table{border-collapse:collapse;width:100%;font-size:13px}th{background:#f4e3e4;color:var(--dk)}
 th,td{border:1px solid var(--line);padding:5px 8px;text-align:center}td:first-child,th:first-child{text-align:left}
 tr:nth-child(even) td{background:#fdf8f7}
@@ -50,6 +50,7 @@ const grade=p=>p==null?'–':G.filter(g=>p>=g[0]).pop()[1];
 const ord=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10>3?0:n%10]);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pc=v=>v==null?'–':(v*100).toFixed(1)+'%';
+const fmtNum=v=>typeof v=='number'&&Number.isFinite(v)?String(Number(v.toFixed(2))):v;
 const $=id=>document.getElementById(id);
 const sum=a=>a.reduce((x,y)=>x+y,0);
 let DB=JSON.parse(localStorage.getItem('rd')||'{}'),LOGOS=JSON.parse(localStorage.getItem('md-logos')||'{}'),cls=Object.keys(DB)[0],ai=0,sn='',tab='s',view='home',on={},W={};
@@ -113,18 +114,18 @@ function stuView(A,R){const x=R.find(r=>r.s.n==sn);if(!x)return'<div class=box>T
  const best=ok.length?ok.reduce((a,b)=>b.p>a.p?b:a):null,low=ok.length?ok.reduce((a,b)=>b.p<a.p?b:a):null;
  const ab=sb.filter(s=>s.p==null).map(s=>s.n).join(', ')||'None';
  return hd(A.name,A)+`<div class=box><h2>① Standing in class</h2><div class=ks>
- ${kp('Class position',x.rank?ord(x.rank):'Not ranked','of '+R.n+' students')}${kp('Overall %',pc(x.p),x.c?x.t+' / '+x.o+' marks':'absent in all')}
+ ${kp('Class position',x.rank?ord(x.rank):'Not ranked','of '+R.n+' students')}${kp('Overall %',pc(x.p),x.c?fmtNum(x.t)+' / '+fmtNum(x.o)+' marks':'absent in all')}
  ${kp('Class average',pc(R.avg))}${kp('vs average',d==null?'–':(d>=0?'+':'')+d.toFixed(1)+' pts','')}${kp('Class highest',pc(R.hi))}</div>
- ${tb(['Subject','Marks','Out of','Student %','Class avg %','Highest %','Subject rank'],sb.map(s=>[esc(s.n),s.v==null?'Absent':s.v,s.m,
+ ${tb(['Subject','Marks','Out of','Student %','Class avg %','Highest %','Subject rank'],sb.map(s=>[esc(s.n),s.v==null?'Absent':fmtNum(s.v),fmtNum(s.m),
   `<span class="${s.p!=null&&s.avg!=null?(s.p>=s.avg?'g':'r'):''}">${pc(s.p)}</span>`,pc(s.avg),pc(s.hi),s.rk?s.rk+' of '+s.N:'–']))}
  ${chart(sb.map(s=>s.n),[sb.map(s=>s.p),sb.map(s=>s.avg),sb.map(s=>s.hi)],['#a02020','#a5a5a5','#70ad47'],['Student','Class average','Highest'])}</div>
  <div class=box><h2>② Overall result &amp; percentile</h2><div class=ks>
- ${kp('Total marks',x.c?x.t:'–',x.c?'out of '+x.o:'')}${kp('Overall %',pc(x.p))}${kp('Grade',grade(x.p))}${kp('Percentile',x.pc!=null?ord(Math.round(x.pc*100)):'–','higher is better')}</div>
+ ${kp('Total marks',x.c?fmtNum(x.t):'–',x.c?'out of '+fmtNum(x.o):'')}${kp('Overall %',pc(x.p))}${kp('Grade',grade(x.p))}${kp('Percentile',x.pc!=null?ord(Math.round(x.pc*100)):'–','higher is better')}</div>
  <svg viewBox="0 0 560 44" width="100%"><rect x=10 y=14 width=540 height=12 rx=6 fill="#f0dcdd"/>${x.pc!=null?`<circle cx=${10+540*x.pc} cy=20 r=9 fill="#5e1414"/>`:''}<text x=10 y=42 font-size=10>lowest in class</text><text x=550 y=42 font-size=10 text-anchor=end>highest in class</text></svg>
  ${tb(['Item','Value'],[['Ahead of',x.ah!=null?x.ah+' of '+(R.n-1)+' classmates':'–'],['Subjects sat',x.c+' of '+A.subs.length],['Absent in',esc(ab)],
   ['Strongest subject',best?esc(best.n)+' ('+pc(best.p)+')':'–'],['Needs most attention',low?esc(low.n)+' ('+pc(low.p)+')':'–']])}</div>
  <div class=box><h2>③ Subject-wise distribution</h2>${tb(['Subject','Marks','Out of','Student %','Grade','Share of total'],
-  sb.map(s=>[esc(s.n),s.v==null?'Absent':s.v,s.m,pc(s.p),grade(s.p),s.v!=null&&x.t?pc(s.v/x.t):'–']))}
+  sb.map(s=>[esc(s.n),s.v==null?'Absent':fmtNum(s.v),fmtNum(s.m),pc(s.p),grade(s.p),s.v!=null&&x.t?pc(s.v/x.t):'–']))}
  ${chart(sb.map(s=>s.n),[sb.map(s=>s.p)],['#a02020'],['Student'])}</div>`}
 
 function combView(p){const all=DB[cls],as=p?all:all.filter((a,i)=>on[cls+i]!==false),w=a=>+W[cls+a.name]||1;
