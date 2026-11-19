@@ -135,7 +135,7 @@ function combView(p){const all=DB[cls],as=p?all:all.filter((a,i)=>on[cls+i]!==fa
   h+=`<div class=box><h2>Student progress – ${esc(sn)}</h2><div class=ks>${kp('Combined %',pc(me.avg),'weighted average')}${kp('Combined position',me.rk?ord(me.rk):'–','of '+v.length)}</div>
   ${tb(['Assessment','Overall %','Class avg %','Position','Percentile','Grade'],as.map((a,j)=>{const x=me.ps[j];return[esc(a.name),pc(x&&x.p),pc(RS[j].avg),x&&x.rank?ord(x.rank)+' of '+RS[j].n:'–',x&&x.pc!=null?ord(Math.round(x.pc*100)):'–',grade(x&&x.p)]}))}
   ${chart(L,[me.ps.map(x=>x&&x.p),RS.map(R=>R.avg)],['#a02020','#a5a5a5'],['Student','Class average'])}</div>`;
-  const keys=[...new Set(as.flatMap(a=>a.subs.map(s=>s.n.toLowerCase())))];
+  const keys=[...new Set(as.flatMap(a=>a.subs.map(s=>s.n.toLowerCase())))].filter(k=>as.some(a=>{const i=a.subs.findIndex(s=>s.n.toLowerCase()==k),x=a.st.find(s=>s.n==sn);return i>=0&&x&&typeof x.k[i]=='number'}));
   h+=`<div class=box><h2>Subject progress – ${esc(sn)}</h2>${tb(['Subject',...L,'Change in marks'],keys.map(k=>{const ps=as.map(a=>{const i=a.subs.findIndex(s=>s.n.toLowerCase()==k),x=a.st.find(s=>s.n==sn),vv=x&&i>=0?x.k[i]:null;return typeof vv=='number'?{v:vv,m:a.subs[i].m}:null}),f=ps.filter(Boolean),d=f.length>1?f[f.length-1].v-f[0].v:null;
    return[esc(k[0].toUpperCase()+k.slice(1)),...ps.map(x=>x?`${fmtNum(x.v)} / ${fmtNum(x.m)}`:'–'),d==null?'–':`<span class="${d>=0?'g':'r'}">${d>=0?'+':''}${fmtNum(d)}</span>`]}))}</div>`}
  if(!p)h+=`<div class=box><h2>Class combined report – ${esc(cls)}</h2>${tb(['Student',...as.map(a=>esc(a.name)),'Combined %','Position'],[...rows].sort((a,b)=>(b.avg??-1)-(a.avg??-1)).map(r=>[esc(r.n),...r.ps.map(x=>pc(x&&x.p)),'<b>'+pc(r.avg)+'</b>',r.rk?ord(r.rk):'–']))}</div>`;return h}
