@@ -58,6 +58,9 @@ let DB=JSON.parse(localStorage.getItem('rd')||'{}'),LOGOS=JSON.parse(localStorag
 const BRAND_LOGO='manisy-logo.png';
 const ask=(m,d='')=>new Promise(r=>{const o=document.createElement('dialog');o.innerHTML=`<form method=dialog style="min-width:320px"><p>${esc(m)}</p><input style="width:100%" value="${esc(d)}"><p style="text-align:right"><button type=button onclick="this.closest('dialog').close('c')">Cancel</button> <button value=ok>OK</button></p></form>`;document.body.append(o);o.showModal();const i=o.querySelector('input');i.select();o.onclose=()=>{const v=o.returnValue=='ok'?i.value:null;o.remove();r(v)}});
 const save=()=>localStorage.setItem('rd',JSON.stringify(DB));
+const isMeasure9=n=>/^Measure 9$/i.test(String(n||'').trim());
+const removeMeasure9=()=>{let changed=false;Object.keys(DB).forEach(c=>{DB[c]=DB[c].map(a=>{const keep=a.subs.map(s=>!isMeasure9(s.n));if(keep.every(Boolean))return a;changed=true;return{...a,subs:a.subs.filter((_,i)=>keep[i]),st:a.st.map(s=>({...s,k:s.k.filter((_,i)=>keep[i])}))}})});if(changed)save()};
+removeMeasure9();
 Object.values(DB).forEach(assessments=>assessments.forEach(a=>{const keep=a.subs.map((s,i)=>isPercentSubject(s.n)?-1:i).filter(i=>i>=0);if(keep.length!==a.subs.length){a.subs=keep.map(i=>a.subs[i]);a.st.forEach(s=>s.k=keep.map(i=>s.k[i]));save()}}));
 const kp=(l,v,s)=>`<div class=k><small>${l}</small><b>${v}</b><small>${s||'&nbsp;'}</small></div>`;
 const tb=(h,r)=>`<table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
@@ -163,7 +166,7 @@ async function parse(wb){const sheet=wb.Sheets[wb.SheetNames[0]],d=XLSX.utils.sh
  if(nameCol==null||nameCol<0)throw'Could not identify a text column for student names';
  let cols=Array.from({length:width},(_,i)=>i).filter(i=>i!==nameCol&&!skip.test(headers[i]||'')&&!isPercentSubject(headers[i])&&body.some(r=>r&&numeric(r[i])!=null));
  if(!cols.length)throw'No numeric measures were found beside the name column';
- const subs=cols.map((i,j)=>{let n=headers[i]||'Measure '+(j+1),cap=n.match(/(?:\/|out\s+of|max(?:imum)?)\s*(\d+(?:\.\d+)?)/i)||n.match(/\((\d+(?:\.\d+)?)\s*(?:marks?)?\)/i),values=body.map(r=>r?numeric(r[i]):null).filter(v=>v!=null),m=cap?parseFloat(cap[1]):Math.ceil(Math.max(...values)/5)*5||Math.max(...values),cleanName=n.replace(/\s*(?:\/|out\s+of|max(?:imum)?)\s*\d+(?:\.\d+)?|\s*\(\d+(?:\.\d+)?\s*(?:marks?)?\)/i,'').replace(/\(\s*\)/g,'').trim();return{n:cleanName||n,m,i}});
+ const subs=cols.map((i,j)=>{let n=headers[i]||'Measure '+(j+1),cap=n.match(/(?:\/|out\s+of|max(?:imum)?)\s*(\d+(?:\.\d+)?)/i)||n.match(/\((\d+(?:\.\d+)?)\s*(?:marks?)?\)/i),values=body.map(r=>r?numeric(r[i]):null).filter(v=>v!=null),m=cap?parseFloat(cap[1]):Math.ceil(Math.max(...values)/5)*5||Math.max(...values),cleanName=n.replace(/\s*(?:\/|out\s+of|max(?:imum)?)\s*\d+(?:\.\d+)?|\s*\(\d+(?:\.\d+)?\s*(?:marks?)?\)/i,'').replace(/\(\s*\)/g,'').trim();return{n:cleanName||n,m,i}}).filter(s=>!isMeasure9(s.n));
  const st=body.map(r=>{const n=label(r&&r[nameCol]),k=subs.map(s=>r?numeric(r[s.i]):null);return n&&!/^%+$/.test(n)&&k.some(v=>v!=null)?{n,k}:null}).filter(Boolean);
  if(!st.length)throw'No student rows with numeric results were found';
  return{cls:String(wb.SheetNames[0]||'Class').trim(),subs:subs.map(({n,m})=>({n,m})),st}}
@@ -190,7 +193,7 @@ async function load(file){try{const ext=(file.name.split('.').pop()||'').toLower
   render();toast('School logo saved for '+(cls||'your next assessment'));return}
  if(ext=='json'){const j=JSON.parse(await file.text());
   if(Array.isArray(j)||Array.isArray(j.data))wb={SheetNames:['Class'],Sheets:{Class:XLSX.utils.json_to_sheet(Array.isArray(j)?j:j.data)}};
-  else if(Object.values(j).every(v=>Array.isArray(v)&&v.every(a=>a.st&&a.subs))){DB=j;cls=Object.keys(DB)[0];view='app';save();return render()}
+  else if(Object.values(j).every(v=>Array.isArray(v)&&v.every(a=>a.st&&a.subs))){DB=j;removeMeasure9();cls=Object.keys(DB)[0];view='app';save();return render()}
   else wb={SheetNames:['Class'],Sheets:{Class:XLSX.utils.json_to_sheet([j])}}
  }else if(ext=='pdf')wb={SheetNames:['Class'],Sheets:{Class:XLSX.utils.aoa_to_sheet(await pdfRows(await file.arrayBuffer()))}};
  else if(ext=='docx'){const zip=await JSZip.loadAsync(await file.arrayBuffer());logo=await logoFromZip(zip);wb={SheetNames:['Class'],Sheets:{Class:XLSX.utils.aoa_to_sheet(await rowsFromDocx(zip))}}}
